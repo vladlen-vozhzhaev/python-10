@@ -10,22 +10,62 @@ screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT))
 clock = pygame.time.Clock()
 WHITE = (255,255,255)
 BLACK = (0,0,0)
+RED = (255,0,0)
+
+class Wall(pygame.sprite.Sprite):
+    def __init__(self, x, y):
+        super().__init__()
+        self.image = pygame.Surface((PLAYER_SIZE, PLAYER_SIZE))
+        self.image.fill(RED)
+        self.rect = self.image.get_rect()
+        self.rect.x = x
+        self.rect.y = y
+
 class Player(pygame.sprite.Sprite):
-    def __init__(self):
+    def __init__(self, walls):
         super().__init__()
         self.image = pygame.Surface((PLAYER_SIZE, PLAYER_SIZE))
         self.image.fill(WHITE)
         self.rect = self.image.get_rect()
         self.rect.center = (20, 20)
+        self.walls = walls
     def update(self, dx, dy):
+        # Ограничение на диагональное перемещение
+        if dx != 0 and dy != 0:
+            dx = 0
+            dy = 0
         new_x = self.rect.x + dx
         new_y = self.rect.y + dy
+        # Проверка на выход за границы экрана
+        if new_x < 0 or new_x > SCREEN_WIDTH-PLAYER_SIZE:
+            new_x = self.rect.x
+        if new_y < 0 or new_y > SCREEN_HEIGHT-PLAYER_SIZE:
+            new_y = self.rect.y
         self.rect.x = new_x
         self.rect.y = new_y
+        collided_walls = pygame.sprite.spritecollide(self, self.walls, False)
+        for wall in collided_walls:
+            if dx > 0:
+                self.rect.right = wall.rect.left
+            if dx < 0:
+                self.rect.left = wall.rect.right
+            if dy > 0:
+                self.rect.bottom = wall.rect.top
+            if dy < 0:
+                self.rect.top = wall.rect.bottom
 
-player = Player()
+walls = pygame.sprite.Group()
+for i in range(1,10,3):
+    wall = Wall(PLAYER_SIZE*i, 0)
+    walls.add(wall)
+
+# wall1 = Wall(100,100)
+# wall2 = Wall(400,400)
+
+# walls.add(wall1, wall2)
+player = Player(walls)
 all_sprites = pygame.sprite.Group()
-all_sprites.add(player)
+all_sprites.add(player, walls)
 while True:
     for event in pygame.event.get():
         if event.type == pygame.QUIT:
